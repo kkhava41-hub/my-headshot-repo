@@ -1,0 +1,224 @@
+#!/usr/bin/env python3
+"""
+Utils Module - Utility Functions and Helpers
+Common utility functions for the headshot system
+"""
+
+import os
+import hashlib
+from datetime import datetime
+
+
+class FileUtils:
+    """File utility functions"""
+    
+    @staticmethod
+    def create_directory(directory):
+        """Create directory if it doesn't exist"""
+        try:
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+                print(f"✓ Created directory: {directory}")
+            return True
+        except Exception as e:
+            print(f"✗ Error creating directory: {e}")
+            return False
+    
+    @staticmethod
+    def file_exists(filepath):
+        """Check if file exists"""
+        return os.path.exists(filepath)
+    
+    @staticmethod
+    def get_file_size(filepath):
+        """Get file size in bytes"""
+        try:
+            return os.path.getsize(filepath)
+        except Exception as e:
+            print(f"✗ Error getting file size: {e}")
+            return None
+    
+    @staticmethod
+    def delete_file(filepath):
+        """Delete a file"""
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                print(f"✓ Deleted file: {filepath}")
+                return True
+            return False
+        except Exception as e:
+            print(f"✗ Error deleting file: {e}")
+            return False
+    
+    @staticmethod
+    def list_files(directory):
+        """List all files in directory"""
+        try:
+            return os.listdir(directory)
+        except Exception as e:
+            print(f"✗ Error listing files: {e}")
+            return []
+
+
+class StringUtils:
+    """String utility functions"""
+    
+    @staticmethod
+    def slugify(text):
+        """Convert text to slug format"""
+        return text.lower().replace(' ', '-').replace('_', '-')
+    
+    @staticmethod
+    def truncate(text, length=100):
+        """Truncate text to specified length"""
+        if len(text) > length:
+            return text[:length] + "..."
+        return text
+    
+    @staticmethod
+    def capitalize_words(text):
+        """Capitalize first letter of each word"""
+        return " ".join(word.capitalize() for word in text.split())
+    
+    @staticmethod
+    def count_words(text):
+        """Count words in text"""
+        return len(text.split())
+    
+    @staticmethod
+    def remove_special_chars(text):
+        """Remove special characters from text"""
+        import re
+        return re.sub(r'[^a-zA-Z0-9\s]', '', text)
+
+
+class HashUtils:
+    """Hashing utility functions"""
+    
+    @staticmethod
+    def hash_md5(text):
+        """Create MD5 hash"""
+        return hashlib.md5(text.encode()).hexdigest()
+    
+    @staticmethod
+    def hash_sha256(text):
+        """Create SHA256 hash"""
+        return hashlib.sha256(text.encode()).hexdigest()
+    
+    @staticmethod
+    def hash_password(password, salt=""):
+        """Hash password with optional salt"""
+        return hashlib.sha256((password + salt).encode()).hexdigest()
+
+
+class DateUtils:
+    """Date/Time utility functions"""
+    
+    @staticmethod
+    def get_current_datetime():
+        """Get current datetime"""
+        return datetime.now().isoformat()
+    
+    @staticmethod
+    def format_datetime(dt, format_str="%Y-%m-%d %H:%M:%S"):
+        """Format datetime object"""
+        if isinstance(dt, str):
+            dt = datetime.fromisoformat(dt)
+        return dt.strftime(format_str)
+    
+    @staticmethod
+    def get_date_difference(date1, date2):
+        """Get difference between two dates"""
+        if isinstance(date1, str):
+            date1 = datetime.fromisoformat(date1)
+        if isinstance(date2, str):
+            date2 = datetime.fromisoformat(date2)
+        
+        return (date2 - date1).days
+    
+    @staticmethod
+    def is_future_date(date_str):
+        """Check if date is in future"""
+        dt = datetime.fromisoformat(date_str)
+        return dt > datetime.now()
+    
+    @staticmethod
+    def is_past_date(date_str):
+        """Check if date is in past"""
+        dt = datetime.fromisoformat(date_str)
+        return dt < datetime.now()
+
+
+class Logger:
+    """Simple logging utility"""
+    
+    def __init__(self, log_file="app.log"):
+        """Initialize logger"""
+        self.log_file = log_file
+    
+    def log(self, message, level="INFO"):
+        """Log a message"""
+        timestamp = datetime.now().isoformat()
+        log_message = f"[{timestamp}] [{level}] {message}"
+        
+        print(log_message)
+        
+        try:
+            with open(self.log_file, 'a', encoding='utf-8') as f:
+                f.write(log_message + "\n")
+        except Exception as e:
+            print(f"✗ Error writing to log: {e}")
+    
+    def info(self, message):
+        """Log info level"""
+        self.log(message, "INFO")
+    
+    def error(self, message):
+        """Log error level"""
+        self.log(message, "ERROR")
+    
+    def warning(self, message):
+        """Log warning level"""
+        self.log(message, "WARNING")
+    
+    def success(self, message):
+        """Log success level"""
+        self.log(message, "SUCCESS")
+
+
+class Config:
+    """Application configuration"""
+    
+    def __init__(self, config_dict=None):
+        """Initialize configuration"""
+        self.config = config_dict or {
+            "app_name": "Headshot Management System",
+            "version": "1.0.0",
+            "db_name": "headshot.db",
+            "default_gallery": "Main Gallery",
+            "export_formats": ["json", "csv", "html", "txt"],
+            "max_file_size": 10485760,  # 10MB
+            "debug": False
+        }
+    
+    def get(self, key, default=None):
+        """Get config value"""
+        return self.config.get(key, default)
+    
+    def set(self, key, value):
+        """Set config value"""
+        self.config[key] = value
+    
+    def get_all(self):
+        """Get all config"""
+        return self.config
+    
+    def display(self):
+        """Display configuration"""
+        print("\n" + "="*50)
+        print("APPLICATION CONFIGURATION")
+        print("="*50)
+        for key, value in self.config.items():
+            print(f"{key}: {value}")
+        print("="*50 + "\n")
