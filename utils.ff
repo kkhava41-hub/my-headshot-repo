@@ -6,6 +6,7 @@ Common utility functions for the headshot system
 
 import os
 import hashlib
+import json
 from datetime import datetime
 
 
@@ -222,3 +223,381 @@ class Config:
         for key, value in self.config.items():
             print(f"{key}: {value}")
         print("="*50 + "\n")
+
+
+class Headshot:
+    """Headshot class for managing individual headshots"""
+    
+    def __init__(self, name, image_path, title="", bio="", email="", phone=""):
+        """
+        Initialize a headshot object
+        
+        Args:
+            name (str): Person's full name
+            image_path (str): Path to the headshot image
+            title (str): Job title or position
+            bio (str): Short biography
+            email (str): Email address
+            phone (str): Phone number
+        """
+        self.name = name
+        self.image_path = image_path
+        self.title = title
+        self.bio = bio
+        self.email = email
+        self.phone = phone
+        self.created_at = datetime.now().isoformat()
+        self.updated_at = datetime.now().isoformat()
+        self.metadata = {}
+    
+    def to_dict(self):
+        """Convert headshot to dictionary"""
+        return {
+            "name": self.name,
+            "image_path": self.image_path,
+            "title": self.title,
+            "bio": self.bio,
+            "email": self.email,
+            "phone": self.phone,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "metadata": self.metadata
+        }
+    
+    def to_json(self):
+        """Convert headshot to JSON string"""
+        return json.dumps(self.to_dict(), indent=2, ensure_ascii=False)
+    
+    def display(self):
+        """Display headshot information in console"""
+        print("\n" + "="*60)
+        print(f"📸 NAME: {self.name}")
+        print(f"💼 TITLE: {self.title}")
+        print(f"📧 EMAIL: {self.email}")
+        print(f"📱 PHONE: {self.phone}")
+        print(f"📝 BIO: {self.bio}")
+        print(f"🖼️  IMAGE: {self.image_path}")
+        print(f"⏰ CREATED: {self.created_at}")
+        print(f"🔄 UPDATED: {self.updated_at}")
+        print("="*60 + "\n")
+    
+    def update_profile(self, **kwargs):
+        """Update headshot profile information"""
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+        self.updated_at = datetime.now().isoformat()
+    
+    def add_metadata(self, key, value):
+        """Add metadata to headshot"""
+        self.metadata[key] = value
+    
+    def get_metadata(self, key):
+        """Get metadata from headshot"""
+        return self.metadata.get(key)
+    
+    def get_profile_summary(self):
+        """Get a summary of the profile"""
+        return f"{self.name} - {self.title} ({self.email})"
+
+
+class HeadshotGallery:
+    """Gallery class for managing multiple headshots"""
+    
+    def __init__(self, gallery_name="Main Gallery"):
+        """
+        Initialize a headshot gallery
+        
+        Args:
+            gallery_name (str): Name of the gallery
+        """
+        self.gallery_name = gallery_name
+        self.headshots = []
+        self.created_at = datetime.now().isoformat()
+    
+    def add_headshot(self, headshot):
+        """Add a headshot to the gallery"""
+        if isinstance(headshot, Headshot):
+            self.headshots.append(headshot)
+            return True
+        return False
+    
+    def remove_headshot(self, name):
+        """Remove a headshot by name"""
+        self.headshots = [hs for hs in self.headshots if hs.name.lower() != name.lower()]
+    
+    def get_headshot(self, name):
+        """Retrieve a headshot by name"""
+        for headshot in self.headshots:
+            if headshot.name.lower() == name.lower():
+                return headshot
+        return None
+    
+    def search_by_title(self, title):
+        """Search headshots by title"""
+        return [hs for hs in self.headshots if title.lower() in hs.title.lower()]
+    
+    def search_by_email(self, email):
+        """Search headshots by email"""
+        return [hs for hs in self.headshots if email.lower() in hs.email.lower()]
+    
+    def list_all(self):
+        """List all headshots in gallery"""
+        print(f"\n{'='*70}")
+        print(f"📸 GALLERY: {self.gallery_name}")
+        print(f"👥 TOTAL MEMBERS: {len(self.headshots)}")
+        print(f"{'='*70}\n")
+        
+        for i, hs in enumerate(self.headshots, 1):
+            print(f"{i}. {hs.name}")
+            print(f"   💼 Title: {hs.title}")
+            print(f"   📧 Email: {hs.email}")
+            print(f"   📱 Phone: {hs.phone}")
+            print()
+    
+    def export_to_json(self, filename):
+        """Export gallery to JSON file"""
+        data = {
+            "gallery_name": self.gallery_name,
+            "created_at": self.created_at,
+            "total_headshots": len(self.headshots),
+            "headshots": [hs.to_dict() for hs in self.headshots]
+        }
+        
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            print(f"✓ Gallery exported to {filename}")
+            return True
+        except Exception as e:
+            print(f"✗ Error exporting gallery: {e}")
+            return False
+    
+    def import_from_json(self, filename):
+        """Import gallery from JSON file"""
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            for hs_data in data.get("headshots", []):
+                hs = Headshot(
+                    name=hs_data.get("name"),
+                    image_path=hs_data.get("image_path"),
+                    title=hs_data.get("title", ""),
+                    bio=hs_data.get("bio", ""),
+                    email=hs_data.get("email", ""),
+                    phone=hs_data.get("phone", "")
+                )
+                self.add_headshot(hs)
+            
+            print(f"✓ Gallery imported from {filename}")
+            return True
+        except Exception as e:
+            print(f"✗ Error importing gallery: {e}")
+            return False
+    
+    def generate_html_gallery(self, output_file="gallery.html"):
+        """Generate a professional HTML gallery"""
+        html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{self.gallery_name} - Headshot Gallery</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }}
+        
+        .container {{ max-width: 1200px; margin: 0 auto; }}
+        
+        .header {{
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }}
+        
+        .header h1 {{ font-size: 48px; margin-bottom: 10px; }}
+        .header p {{ font-size: 18px; opacity: 0.9; }}
+        
+        .gallery {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }}
+        
+        .card {{
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s;
+        }}
+        
+        .card:hover {{ transform: translateY(-10px); }}
+        
+        .card-image {{
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 60px;
+        }}
+        
+        .card-content {{ padding: 20px; }}
+        
+        .card-name {{
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }}
+        
+        .card-title {{
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }}
+        
+        .card-bio {{
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }}
+        
+        .card-contact {{
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }}
+        
+        .contact-item {{
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }}
+        
+        .footer {{
+            text-align: center;
+            color: white;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0.8;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{self.gallery_name}</h1>
+            <p>Total Members: {len(self.headshots)}</p>
+        </div>
+        
+        <div class="gallery">
+"""
+        
+        for hs in self.headshots:
+            first_letter = hs.name[0].upper() if hs.name else "?"
+            html_content += f"""            <div class="card">
+                <div class="card-image">{first_letter}</div>
+                <div class="card-content">
+                    <div class="card-name">{hs.name}</div>
+                    <div class="card-title">{hs.title}</div>
+                    <div class="card-bio">{hs.bio}</div>
+                    <div class="card-contact">
+                        <div class="contact-item"><strong>Email:</strong> {hs.email}</div>
+                        <div class="contact-item"><strong>Phone:</strong> {hs.phone}</div>
+                    </div>
+                </div>
+            </div>
+"""
+        
+        html_content += """        </div>
+        
+        <div class="footer">
+            <p>Generated automatically from Headshot Management System</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+        
+        try:
+            with open(output_file, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            print(f"✓ HTML gallery created: {output_file}")
+            return True
+        except Exception as e:
+            print(f"✗ Error generating HTML: {e}")
+            return False
+    
+    def get_statistics(self):
+        """Get gallery statistics"""
+        return {
+            "gallery_name": self.gallery_name,
+            "total_members": len(self.headshots),
+            "created_at": self.created_at,
+            "updated_at": datetime.now().isoformat()
+        }
+
+
+# Demo/Testing
+if __name__ == "__main__":
+    print("\n╔════════════════════════════════════════════════════════════════╗")
+    print("║           📸 HEADSHOT MANAGEMENT SYSTEM 📸                      ║")
+    print("╚════════════════════════════════════════════════════════════════╝\n")
+    
+    # Create gallery
+    gallery = HeadshotGallery("Company Team Gallery")
+    
+    # Add sample headshots
+    hs1 = Headshot(
+        name="John Doe",
+        image_path="/images/john.jpg",
+        title="Senior Software Engineer",
+        bio="Expert in full-stack development with 10+ years experience",
+        email="john.doe@company.com",
+        phone="+1-555-0101"
+    )
+    
+    hs2 = Headshot(
+        name="Jane Smith",
+        image_path="/images/jane.jpg",
+        title="Product Manager",
+        bio="Passionate about creating user-centric products",
+        email="jane.smith@company.com",
+        phone="+1-555-0102"
+    )
+    
+    hs3 = Headshot(
+        name="Mike Johnson",
+        image_path="/images/mike.jpg",
+        title="UX Designer",
+        bio="Creating beautiful and intuitive user experiences",
+        email="mike.johnson@company.com",
+        phone="+1-555-0103"
+    )
+    
+    # Add to gallery
+    gallery.add_headshot(hs1)
+    gallery.add_headshot(hs2)
+    gallery.add_headshot(hs3)
+    
+    # Display
+    gallery.list_all()
+    
+    # Export
+    gallery.export_to_json("gallery.json")
+    gallery.generate_html_gallery("team_gallery.html")
+    
+    print("✓ Headshot system initialized successfully!")
+    print("\n" + "="*70 + "\n")
